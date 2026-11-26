@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DABOUR MED REMINDER</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#f7931a">
+
 <style>
 body {
   margin: 0;
@@ -16,7 +19,7 @@ header {
   background: #f7931a;
   color: #111;
   padding: 25px;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: bold;
 }
 main { padding: 20px; }
@@ -44,13 +47,16 @@ input {
 }
 </style>
 </head>
+
 <body>
 <header>DABOUR MED REMINDER</header>
+
 <main>
 <div class="card">
 <h2>مرحباً بك</h2>
 <p>منظم مواعيد الأدوية والجرعات</p>
 </div>
+
 <div class="card">
 <h3>إضافة دواء</h3>
 <input id="medicine" placeholder="اسم الدواء">
@@ -58,25 +64,37 @@ input {
 <br>
 <button onclick="addMedicine()">إضافة</button>
 </div>
+
 <div class="card">
 <h3>قائمة الأدوية</h3>
 <div id="list"></div>
 </div>
 </main>
+
 <script>
 function addMedicine() {
  let name = document.getElementById("medicine").value;
  let time = document.getElementById("time").value;
+
  if (!name || !time) {
   alert("اكتب اسم الدواء والموعد");
   return;
  }
+
  let item = document.createElement("p");
  item.textContent = name + " - " + time;
  document.getElementById("list").appendChild(item);
+
  document.getElementById("medicine").value = "";
  document.getElementById("time").value = "";
 }
+
+if ("serviceWorker" in navigator) {
+ window.addEventListener("load", () => {
+  navigator.serviceWorker.register("./sw.js");
+ });
+}
 </script>
+
 </body>
 </html>
