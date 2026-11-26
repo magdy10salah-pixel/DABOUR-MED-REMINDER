@@ -1,100 +1,353 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DABOUR MED REMINDER</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101722">
 <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#f7931a">
-
+<title>DABOUR MED REMINDER</title>
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0b0f14;
-  color: white;
-  text-align: center;
+:root{
+ --bg:#0b111b;
+ --panel:#151f2d;
+ --panel2:#1c2939;
+ --orange:#f7931a;
+ --green:#299b69;
+ --red:#d94b55;
+ --text:#f4f6fa;
+ --muted:#98a7b9;
 }
-header {
-  background: #f7931a;
-  color: #111;
-  padding: 25px;
-  font-size: 22px;
-  font-weight: bold;
+*{box-sizing:border-box}
+body{
+ margin:0;background:var(--bg);color:var(--text);
+ font-family:Arial,sans-serif;
 }
-main { padding: 20px; }
-.card {
-  background: #19212b;
-  padding: 20px;
-  margin: 15px auto;
-  border-radius: 14px;
-  max-width: 420px;
+header{
+ padding:25px 18px;
+ background:linear-gradient(135deg,#18283a,#101722);
+ border-bottom:2px solid var(--orange);
 }
-button {
-  background: #f7931a;
-  border: 0;
-  padding: 13px 25px;
-  border-radius: 9px;
-  font-size: 17px;
-  font-weight: bold;
+.brand{font-size:23px;font-weight:bold;color:var(--orange)}
+.subtitle{color:var(--muted);font-size:13px;margin-top:7px}
+main{max-width:650px;margin:auto;padding:16px}
+.card{
+ background:var(--panel);border:1px solid #263649;
+ border-radius:17px;padding:18px;margin-bottom:16px;
 }
-input {
-  padding: 12px;
-  margin: 8px;
-  border-radius: 8px;
-  border: 0;
-  width: 85%;
+h2,h3{margin-top:0}
+h3{font-size:17px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{
+ background:var(--panel2);border-radius:13px;
+ padding:16px;text-align:center
 }
+.number{font-size:27px;color:var(--orange);font-weight:bold}
+.muted{color:var(--muted);font-size:13px}
+label{display:block;text-align:right;margin:12px 0 6px;color:#cbd5e1}
+input,textarea{
+ width:100%;padding:13px;border-radius:10px;
+ border:1px solid #344458;background:#0e1723;
+ color:white;font-size:15px;outline:none
+}
+textarea{resize:vertical;min-height:65px}
+button{
+ border:0;border-radius:10px;padding:12px 16px;
+ background:var(--orange);color:#111;
+ font-weight:bold;font-size:14px;cursor:pointer
+}
+button:disabled{opacity:.5}
+.secondary{background:#34465c;color:white}
+.green{background:var(--green);color:white}
+.red{background:var(--red);color:white}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.actions button{flex:1}
+.medicine{
+ background:var(--panel2);border:1px solid #344458;
+ padding:15px;border-radius:13px;margin-top:12px
+}
+.med-name{font-size:18px;font-weight:bold}
+.med-time{color:var(--orange);margin-top:9px}
+.empty{color:var(--muted);padding:20px}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}
+#installBtn{display:none}
 </style>
 </head>
-
 <body>
-<header>DABOUR MED REMINDER</header>
+
+<header>
+ <div class="brand">DABOUR MED REMINDER</div>
+ <div class="subtitle">منظم الأدوية ومواعيد الجرعات | الإصدار 2.0</div>
+</header>
 
 <main>
+
 <div class="card">
-<h2>مرحباً بك</h2>
-<p>منظم مواعيد الأدوية والجرعات</p>
+ <h2>أهلاً بك 👋</h2>
+ <p class="muted" id="today"></p>
+ <div class="stats">
+  <div class="stat">
+   <div class="number" id="total">0</div>
+   <div class="muted">إجمالي الأدوية</div>
+  </div>
+  <div class="stat">
+   <div class="number" id="count">0</div>
+   <div class="muted">مواعيد اليوم</div>
+  </div>
+ </div>
 </div>
 
 <div class="card">
-<h3>إضافة دواء</h3>
-<input id="medicine" placeholder="اسم الدواء">
-<input id="time" type="time">
-<br>
-<button onclick="addMedicine()">إضافة</button>
+ <h3 id="formTitle">＋ إضافة دواء جديد</h3>
+
+ <label>اسم الدواء</label>
+ <input id="name" placeholder="اكتب اسم الدواء">
+
+ <label>الجرعة المكتوبة من الطبيب</label>
+ <input id="dose" placeholder="مثال: كبسولة واحدة">
+
+ <label>موعد الجرعة</label>
+ <input id="time" type="time">
+
+ <label>ملاحظات</label>
+ <textarea id="notes" placeholder="مثال: قبل الأكل حسب وصف الطبيب"></textarea>
+
+ <div class="actions">
+  <button class="green" id="saveBtn" onclick="saveMedicine()">حفظ الدواء</button>
+  <button class="secondary" id="cancelBtn" onclick="cancelEdit()" hidden>إلغاء</button>
+ </div>
 </div>
 
 <div class="card">
-<h3>قائمة الأدوية</h3>
-<div id="list"></div>
+ <h3>🔔 إعداد الإشعارات</h3>
+ <p class="muted" id="notifyStatus">لم يتم طلب إذن الإشعارات بعد.</p>
+ <div class="actions">
+  <button onclick="enableNotifications()">تفعيل الإشعارات</button>
+  <button class="secondary" id="installBtn" onclick="installApp()">تثبيت التطبيق</button>
+ </div>
+ <p class="muted">التنبيهات داخل الصفحة تعمل أثناء بقائها مفتوحة. لا نضمن وصولها بعد إغلاق التطبيق.</p>
 </div>
+
+<div class="card">
+ <h3>💊 قائمة الأدوية</h3>
+ <div id="list"></div>
+ <div class="empty" id="empty">لم تضف أي دواء حتى الآن.</div>
+</div>
+
+<div class="card">
+ <h3>🛡️ حماية بياناتك</h3>
+ <p class="muted">بيانات الأدوية محفوظة محلياً على هذا الجهاز.</p>
+ <div class="actions">
+  <button class="secondary" onclick="exportData()">نسخ احتياطي</button>
+  <button class="secondary" onclick="importData()">استعادة نسخة</button>
+ </div>
+ <input type="file" id="backupFile" accept=".json,application/json" hidden>
+</div>
+
 </main>
 
-<script>
-function addMedicine() {
- let name = document.getElementById("medicine").value;
- let time = document.getElementById("time").value;
+<footer>
+ DABOUR SOFTWARE © 2026
+</footer>
 
- if (!name || !time) {
-  alert("اكتب اسم الدواء والموعد");
+<script>
+const KEY="DABOUR_MED_V2";
+let medicines=JSON.parse(localStorage.getItem(KEY)||"[]");
+let editing=null;
+let installPrompt=null;
+let notified={};
+
+function saveData(){
+ localStorage.setItem(KEY,JSON.stringify(medicines));
+}
+
+function render(){
+ const list=document.getElementById("list");
+ list.innerHTML="";
+ document.getElementById("empty").hidden=medicines.length>0;
+ document.getElementById("total").textContent=medicines.length;
+ document.getElementById("count").textContent=medicines.length;
+
+ medicines.forEach(m=>{
+  const box=document.createElement("div");
+  box.className="medicine";
+
+  const title=document.createElement("div");
+  title.className="med-name";
+  title.textContent=m.name;
+
+  const dose=document.createElement("p");
+  dose.textContent="الجرعة: "+(m.dose||"غير محددة");
+
+  const time=document.createElement("div");
+  time.className="med-time";
+  time.textContent="🕒 "+m.time;
+
+  const notes=document.createElement("p");
+  notes.className="muted";
+  notes.textContent=m.notes||"لا توجد ملاحظات";
+
+  const actions=document.createElement("div");
+  actions.className="actions";
+
+  const edit=document.createElement("button");
+  edit.className="green";
+  edit.textContent="تعديل";
+  edit.onclick=()=>editMedicine(m.id);
+
+  const del=document.createElement("button");
+  del.className="red";
+  del.textContent="حذف";
+  del.onclick=()=>deleteMedicine(m.id);
+
+  actions.append(edit,del);
+  box.append(title,dose,time,notes,actions);
+  list.appendChild(box);
+ });
+}
+
+function saveMedicine(){
+ const name=document.getElementById("name").value.trim();
+ const dose=document.getElementById("dose").value.trim();
+ const time=document.getElementById("time").value;
+ const notes=document.getElementById("notes").value.trim();
+
+ if(!name||!time){
+  alert("من فضلك اكتب اسم الدواء والموعد");
   return;
  }
 
- let item = document.createElement("p");
- item.textContent = name + " - " + time;
- document.getElementById("list").appendChild(item);
+ if(editing!==null){
+  const m=medicines.find(x=>x.id===editing);
+  if(m) Object.assign(m,{name,dose,time,notes});
+ }else{
+  medicines.push({
+   id:Date.now().toString(),
+   name,dose,time,notes
+  });
+ }
 
- document.getElementById("medicine").value = "";
- document.getElementById("time").value = "";
+ saveData();
+ cancelEdit();
+ render();
 }
 
-if ("serviceWorker" in navigator) {
- window.addEventListener("load", () => {
-  navigator.serviceWorker.register("./sw.js");
+function editMedicine(id){
+ const m=medicines.find(x=>x.id===id);
+ if(!m)return;
+ editing=id;
+ document.getElementById("name").value=m.name;
+ document.getElementById("dose").value=m.dose||"";
+ document.getElementById("time").value=m.time;
+ document.getElementById("notes").value=m.notes||"";
+ document.getElementById("formTitle").textContent="تعديل بيانات الدواء";
+ document.getElementById("saveBtn").textContent="حفظ التعديلات";
+ document.getElementById("cancelBtn").hidden=false;
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function cancelEdit(){
+ editing=null;
+ ["name","dose","time","notes"].forEach(id=>{
+  document.getElementById(id).value="";
+ });
+ document.getElementById("formTitle").textContent="＋ إضافة دواء جديد";
+ document.getElementById("saveBtn").textContent="حفظ الدواء";
+ document.getElementById("cancelBtn").hidden=true;
+}
+
+function deleteMedicine(id){
+ if(!confirm("هل تريد حذف هذا الدواء؟"))return;
+ medicines=medicines.filter(m=>m.id!==id);
+ saveData();
+ render();
+}
+
+async function enableNotifications(){
+ if(!("Notification" in window)){
+  alert("المتصفح لا يدعم الإشعارات");
+  return;
+ }
+ const permission=await Notification.requestPermission();
+ document.getElementById("notifyStatus").textContent=
+  permission==="granted"?"تم السماح بالإشعارات":"لم يتم السماح بالإشعارات";
+}
+
+function checkReminders(){
+ if(!("Notification" in window)||Notification.permission!=="granted")return;
+
+ const now=new Date();
+ const current=now.toTimeString().slice(0,5);
+ const day=now.toISOString().slice(0,10);
+
+ medicines.forEach(m=>{
+  const key=day+"_"+m.id+"_"+m.time;
+  if(m.time===current&&!notified[key]){
+   new Notification("موعد الدواء - DABOUR",{
+    body:m.name+" | الجرعة: "+(m.dose||"راجع وصف الطبيب")
+   });
+   notified[key]=true;
+  }
  });
 }
-</script>
 
+function exportData(){
+ const blob=new Blob([JSON.stringify(medicines,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;
+ a.download="DABOUR-MED-BACKUP.json";
+ a.click();
+ URL.revokeObjectURL(url);
+}
+
+function importData(){
+ document.getElementById("backupFile").click();
+}
+
+document.getElementById("backupFile").addEventListener("change",async e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(!Array.isArray(data)||!data.every(m=>
+   m&&typeof m.name==="string"&&typeof m.time==="string"
+  ))throw Error();
+  if(confirm("استعادة النسخة ستستبدل قائمة الأدوية الحالية. متابعة؟")){
+   medicines=data;
+   saveData();
+   render();
+  }
+ }catch{
+  alert("ملف النسخة الاحتياطية غير صالح");
+ }
+ e.target.value="";
+});
+
+window.addEventListener("beforeinstallprompt",e=>{
+ e.preventDefault();
+ installPrompt=e;
+ document.getElementById("installBtn").style.display="block";
+});
+
+async function installApp(){
+ if(!installPrompt)return;
+ await installPrompt.prompt();
+ installPrompt=null;
+}
+
+document.getElementById("today").textContent=
+ new Date().toLocaleDateString("ar-EG",{
+  weekday:"long",year:"numeric",month:"long",day:"numeric"
+});
+
+if("serviceWorker" in navigator){
+ navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+
+render();
+checkReminders();
+setInterval(checkReminders,15000);
+</script>
 </body>
 </html>
