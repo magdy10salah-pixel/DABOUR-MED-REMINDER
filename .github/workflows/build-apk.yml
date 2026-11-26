@@ -1,3 +1,4 @@
+
 name: Build DABOUR MED APK
 
 on:
@@ -5,6 +6,7 @@ on:
   push:
     paths:
       - ".github/workflows/build-apk.yml"
+      - "index.html"
 
 jobs:
   build:
@@ -25,23 +27,207 @@ jobs:
         with:
           node-version: 22
 
-      - name: Prepare app files
+      - name: Prepare app
         run: |
           mkdir -p www
           cp index.html www/index.html
           cp manifest.json www/manifest.json
           cp sw.js www/sw.js
           npm init -y
+          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/local-notifications@7 esbuild
 
-      - name: Install Capacitor
+      - name: Create native reminders
         run: |
-          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          cat > native-reminders.js <<'EOF'
+          import { Capacitor } from "@capacitor/core";
+          import { LocalNotifications } from "@capacitor/local-notifications";
+
+          const KEY = "DABOUR_MED_V2";
+
+          function makeId(value) {
+            let hash = 0;
+            for (const ch of String(value)) {
+              hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+            }
+            return Math.abs(hash) || 1;
+          }
+
+          async function sync(medicines) {
+            if (!Capacitor.isNativePlatform()) return;
+
+            const permission = await LocalNotifications.checkPermissions();
+            if (permission.display !== "granted") return;
+
+            const pending = await LocalNotifications.getPending();
+
+            if (pending.notifications.length) {
+              await LocalNotifications.cancel({
+                notifications: pending.notifications.map(n => ({ id: n.id }))
+              });
+            }
+
+            const notifications = (Array.isArray(medicines) ? medicines : [])
+              .filter(m => m && m.name && /^\d{2}:\d{2}$/.test(m.time || ""))
+              .map(m => {
+                const [hour, minute] = m.time.split(":").map(Number);
+
+                return {
+                  id: makeId(m.id || m.name + m.time),
+                  title: "موعد الدواء - DABOUR",
+                  body: m.name + " | الجرعة: " + (m.dose || "راجع وصف الطبيب"),
+                  schedule: {
+                    on: { hour, minute },
+                    allowWhileIdle: true
+                  }
+                };
+              });
+
+            if (notifications.length) {
+              await LocalNotifications.schedule({ notifications });
+            }
+          }
+
+          async function requestPermission() {
+            let status = await LocalNotifications.checkPermissions();
+
+            if (status.display !== "granted") {
+              status = await LocalNotifications.requestPermissions();
+            }
+
+            let exact = { exact_alarm: "prompt" };
+
+            if (status.display === "granted") {
+              exact = await LocalNotifications.checkExactNotificationSetting();
+
+              if (exact.exact_alarm !== "granted") {
+                exact = await LocalNotifications.changeExactNotificationSetting();
+              }
+            }
+
+            return {
+              display: status.display,
+              exact_alarm: exact.exact_alarm
+            };
+          }
+
+          if (Capacitor.isNativePlatform()) {
+            window.DabourNative = { requestPermission, sync };
+
+            window.addEventListener("dabour-medicines-updated", event => {
+              sync(event.detail).catch(console.error);
+            });
+
+            const saved = JSON.parse(localStorage.getItem(KEY) || "[]");
+            sync(saved).catch(console.error);
+          }
+          EOF
+
+          npx esbuild native-reminders.js --bundle --format=esm --outfile=www/native-reminders.bundle.js
+
+      - name: Connect reminders to app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("www/index.html")
+          s = p.read_text(encoding="utf-8")
+
+          marker = '<script>\nconst KEY="DABOUR_MED_V2";'
+          if marker not in s:
+              raise SystemExit("App script marker not found")
+
+          s = s.replace(
+              marker,
+              '<script type="module" src="./native-reminders.bundle.js"></script>\n' + marker,
+              1
+          )
+
+          old_save = '''function saveData(){
+           localStorage.setItem(KEY,JSON.stringify(medicines));
+          }'''
+
+          new_save = '''function saveData(){
+           localStorage.setItem(KEY,JSON.stringify(medicines));
+           window.dispatchEvent(new CustomEvent("dabour-medicines-updated",{detail:medicines}));
+          }'''
+
+          if old_save not in s:
+              raise SystemExit("saveData function not found")
+
+          s = s.replace(old_save, new_save, 1)
+
+          new_enable = '''async function enableNotifications(){
+           if(window.DabourNative){
+            try{
+             const result=await window.DabourNative.requestPermission();
+             if(result.display==="granted"){
+              await window.DabourNative.sync(medicines);
+              document.getElementById("notifyStatus").textContent=
+               result.exact_alarm==="granted"
+                ?"تم تفعيل إشعارات الأدوية على الجهاز."
+                :"تم السماح بالإشعارات. راجع إذن المنبهات والتذكيرات لزيادة دقة المواعيد.";
+             }else{
+              document.getElementById("notifyStatus").textContent="لم يتم السماح بالإشعارات.";
+             }
+            }catch(error){
+             alert("تعذر تفعيل التنبيهات: "+error.message);
+            }
+            return;
+           }
+           if(!("Notification" in window)){
+            alert("المتصفح لا يدعم الإشعارات");
+            return;
+           }
+           const permission=await Notification.requestPermission();
+           document.getElementById("notifyStatus").textContent=
+            permission==="granted"?"تم السماح بالإشعارات":"لم يتم السماح بالإشعارات";
+          }'''
+
+          s, count = re.subn(
+              r'async function enableNotifications\(\)\{.*?\n\}',
+              lambda _: new_enable,
+              s,
+              count=1,
+              flags=re.S
+          )
+
+          if count != 1:
+              raise SystemExit("enableNotifications function not found")
+
+          s = s.replace(
+              'function checkReminders(){',
+              'function checkReminders(){\n if(window.DabourNative)return;',
+              1
+          )
+
+          p.write_text(s, encoding="utf-8")
+          PY
 
       - name: Create Android project
         run: |
           npx cap init "DABOUR MED REMINDER" "com.dabour.medreminder" --web-dir=www
           npx cap add android
           npx cap sync android
+
+      - name: Add Android permissions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text(encoding="utf-8")
+
+          permissions = (
+              '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n'
+              '    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n'
+          )
+
+          if "android.permission.POST_NOTIFICATIONS" not in s:
+              s = s.replace("<application", permissions + "    <application", 1)
+
+          p.write_text(s, encoding="utf-8")
+          PY
 
       - name: Build APK
         run: |
