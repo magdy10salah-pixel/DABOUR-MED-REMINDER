@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DABOUR MED REMINDER</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b0f14;
+  color: white;
+  text-align: center;
+}
+header {
+  background: #f7931a;
+  color: #111;
+  padding: 25px;
+  font-size: 24px;
+  font-weight: bold;
+}
+main { padding: 20px; }
+.card {
+  background: #19212b;
+  padding: 20px;
+  margin: 15px auto;
+  border-radius: 14px;
+  max-width: 420px;
+}
+button {
+  background: #f7931a;
+  border: 0;
+  padding: 13px 25px;
+  border-radius: 9px;
+  font-size: 17px;
+  font-weight: bold;
+}
+input {
+  padding: 12px;
+  margin: 8px;
+  border-radius: 8px;
+  border: 0;
+  width: 85%;
+}
+</style>
+</head>
+<body>
+<header>DABOUR MED REMINDER</header>
+<main>
+<div class="card">
+<h2>مرحباً بك</h2>
+<p>منظم مواعيد الأدوية والجرعات</p>
+</div>
+<div class="card">
+<h3>إضافة دواء</h3>
+<input id="medicine" placeholder="اسم الدواء">
+<input id="time" type="time">
+<br>
+<button onclick="addMedicine()">إضافة</button>
+</div>
+<div class="card">
+<h3>قائمة الأدوية</h3>
+<div id="list"></div>
+</div>
+</main>
+<script>
+function addMedicine() {
+ let name = document.getElementById("medicine").value;
+ let time = document.getElementById("time").value;
+ if (!name || !time) {
+  alert("اكتب اسم الدواء والموعد");
+  return;
+ }
+ let item = document.createElement("p");
+ item.textContent = name + " - " + time;
+ document.getElementById("list").appendChild(item);
+ document.getElementById("medicine").value = "";
+ document.getElementById("time").value = "";
+}
+</script>
+</body>
+</html>
