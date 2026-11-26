@@ -1,0 +1,12 @@
+{
+  "name": "DABOUR MED REMINDER",
+  "short_name": "DABOUR MED",
+  "description": "منظم مواعيد الأدوية والجرعات",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#f7931a",
+  "orientation": "portrait",
+  "lang": "ar",
+  "dir": "rtl"
+}
